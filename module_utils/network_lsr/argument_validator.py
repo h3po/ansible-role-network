@@ -285,17 +285,17 @@ class ArgValidatorRouteTable(ArgValidator):
                     name,
                     "route table value is {0} but cannot be less than 1".format(value),
                 )
-            elif table > 0xFFFFFFFF:
+            elif table > UINT32_MAX:
                 raise ValidationError(
                     name,
-                    "route table value is {0} but cannot be greater than 4294967295".format(
-                        value
+                    "route table value is {0} but cannot be greater than {1}".format(
+                        value, UINT32_MAX
                     ),
                 )
         if isinstance(table, Util.STRING_TYPE):
             if table == "":
                 raise ValidationError(name, "route table name cannot be empty string")
-            if not IPRouteUtils.ROUTE_TABLE_ALIAS_RE.match(table):
+            if not IPRouteUtils.ROUTE_TABLE_NAME_REGEX.match(table):
                 raise ValidationError(
                     name, "route table name contains invalid characters"
                 )
@@ -578,21 +578,34 @@ class ArgValidatorIP(ArgValidatorStr):
 
 
 class ArgValidatorMac(ArgValidatorStr):
-    def __init__(self, name, force_len=None, required=False, default_value=None):
+    def __init__(
+        self, name, force_len=None, required=False, default_value=None, enum_values=None
+    ):
         ArgValidatorStr.__init__(self, name, required, default_value, None)
         self.force_len = force_len
+        self.enum_values_mac = enum_values
 
     def _validate_impl(self, value, name):
         v = ArgValidatorStr._validate_impl(self, value, name)
+
+        if self.enum_values_mac is not None and value in self.enum_values_mac:
+            return v
+
         try:
             addr = Util.mac_aton(v, self.force_len)
         except MyError:
+            enum_ex = ""
+            if self.enum_values_mac is not None:
+                enum_ex = " nor one of %s" % (self.enum_values_mac)
             raise ValidationError(
-                name, "value '%s' is not a valid MAC address" % (value)
+                name, "value '%s' is not a valid MAC address%s" % (value, enum_ex)
             )
         if not addr:
+            enum_ex = ""
+            if self.enum_values_mac is not None:
+                enum_ex = " nor one of %s" % (self.enum_values_mac)
             raise ValidationError(
-                name, "value '%s' is not a valid MAC address" % (value)
+                name, "value '%s' is not a valid MAC address%s" % (value, enum_ex)
             )
         return Util.mac_ntoa(addr)
 
@@ -659,7 +672,7 @@ class ArgValidatorIPRoute(ArgValidatorDict):
                     "gateway", family=family, default_value=None, plain_address=False
                 ),
                 ArgValidatorNum(
-                    "metric", default_value=-1, val_min=-1, val_max=0xFFFFFFFF
+                    "metric", default_value=-1, val_min=-1, val_max=UINT32_MAX
                 ),
                 ArgValidatorRouteTable("table"),
                 ArgValidatorIP(
@@ -719,7 +732,7 @@ class ArgValidatorIPRoutingRule(ArgValidatorDict):
                     default_value=None,
                     required=True,
                     val_min=0,
-                    val_max=0xFFFFFFFF,
+                    val_max=UINT32_MAX,
                 ),
                 ArgValidatorStr(
                     "action",
@@ -734,10 +747,10 @@ class ArgValidatorIPRoutingRule(ArgValidatorDict):
                 ),
                 ArgValidatorIPAddr("from"),
                 ArgValidatorNum(
-                    "fwmark", default_value=None, val_min=1, val_max=0xFFFFFFFF
+                    "fwmark", default_value=None, val_min=1, val_max=UINT32_MAX
                 ),
                 ArgValidatorNum(
-                    "fwmask", default_value=None, val_min=1, val_max=0xFFFFFFFF
+                    "fwmask", default_value=None, val_min=1, val_max=UINT32_MAX
                 ),
                 ArgValidatorStr("iif", default_value=None),
                 ArgValidatorBool("invert", default_value=False),
@@ -748,7 +761,7 @@ class ArgValidatorIPRoutingRule(ArgValidatorDict):
                 ArgValidatorRouteTable("table"),
                 ArgValidatorIPAddr("to"),
                 ArgValidatorNum("tos", default_value=None, val_min=1, val_max=255),
-                ArgValidatorRange("uid", val_min=0, val_max=0xFFFFFFFF),
+                ArgValidatorRange("uid", val_min=0, val_max=UINT32_MAX),
             ],
             default_value=None,
         )
@@ -843,6 +856,7 @@ class ArgValidator_DictIP(ArgValidatorDict):
         r"^ip6-bytestring$",
         r"^ip6-dotint$",
         r"^ndots:([1-9]\d*|0)$",
+        r"^no-aaaa$",
         r"^no-check-names$",
         r"^no-ip6-dotint$",
         r"^no-reload$",
@@ -864,13 +878,15 @@ class ArgValidator_DictIP(ArgValidatorDict):
                 ArgValidatorBool("dhcp4_send_hostname", default_value=None),
                 ArgValidatorIP("gateway4", family=socket.AF_INET),
                 ArgValidatorNum(
-                    "route_metric4", val_min=-1, val_max=0xFFFFFFFF, default_value=None
+                    "route_metric4", val_min=-1, val_max=UINT32_MAX, default_value=None
                 ),
                 ArgValidatorBool("auto6", default_value=None),
+                ArgValidatorBool("ipv4_ignore_auto_dns", default_value=None),
+                ArgValidatorBool("ipv6_ignore_auto_dns", default_value=None),
                 ArgValidatorBool("ipv6_disabled", default_value=None),
                 ArgValidatorIP("gateway6", family=socket.AF_INET6),
                 ArgValidatorNum(
-                    "route_metric6", val_min=-1, val_max=0xFFFFFFFF, default_value=None
+                    "route_metric6", val_min=-1, val_max=UINT32_MAX, default_value=None
                 ),
                 ArgValidatorList(
                     "address",
@@ -918,6 +934,8 @@ class ArgValidator_DictIP(ArgValidatorDict):
                 "gateway4": None,
                 "route_metric4": None,
                 "auto6": True,
+                "ipv4_ignore_auto_dns": None,
+                "ipv6_ignore_auto_dns": None,
                 "ipv6_disabled": False,
                 "gateway6": None,
                 "route_metric6": None,
@@ -1004,7 +1022,7 @@ class ArgValidator_DictEthernet(ArgValidatorDict):
             nested=[
                 ArgValidatorBool("autoneg", default_value=None),
                 ArgValidatorNum(
-                    "speed", val_min=0, val_max=0xFFFFFFFF, default_value=0
+                    "speed", val_min=0, val_max=UINT32_MAX, default_value=0
                 ),
                 ArgValidatorStr(
                     "duplex", enum_values=["half", "full"], default_value=None
@@ -1794,6 +1812,7 @@ class ArgValidator_DictConnection(ArgValidatorDict):
         "vlan",
         "macvlan",
         "wireless",
+        # wokeignore:rule=dummy
         "dummy",
     ]
     VALID_PORT_TYPES = ["bridge", "bond", "team"]
@@ -1828,15 +1847,28 @@ class ArgValidator_DictConnection(ArgValidatorDict):
                     enum_values=ArgValidator_DictConnection.VALID_PORT_TYPES,
                 ),
                 ArgValidatorDeprecated(
+                    # wokeignore:rule=slave
                     "slave_type",
                     deprecated_by="port_type",
                 ),
                 ArgValidatorStr("controller"),
+                # wokeignore:rule=master
                 ArgValidatorDeprecated("master", deprecated_by="controller"),
                 ArgValidatorStr("interface_name", allow_empty=True),
                 ArgValidatorMac("mac"),
+                ArgValidatorMac(
+                    "cloned_mac",
+                    enum_values=[
+                        "default",
+                        "preserve",
+                        "permanent",
+                        "random",
+                        "stable",
+                    ],
+                    default_value="default",
+                ),
                 ArgValidatorNum(
-                    "mtu", val_min=0, val_max=0xFFFFFFFF, default_value=None
+                    "mtu", val_min=0, val_max=UINT32_MAX, default_value=None
                 ),
                 ArgValidatorStr("zone"),
                 ArgValidatorBool("check_iface_exists", default_value=True),
@@ -2447,6 +2479,19 @@ class ArgValidator_ListConnections(ArgValidatorList):
                     "if you need to use initscripts.",
                 )
 
+        # initscripts does not support ip.ipv4_ignore_auto_dns or
+        # ip.ipv6_ignore_auto_dns, so raise errors when network
+        # provider is initscripts
+        if (
+            connection["ip"]["ipv4_ignore_auto_dns"] is not None
+            or connection["ip"]["ipv6_ignore_auto_dns"] is not None
+        ):
+            if mode == self.VALIDATE_ONE_MODE_INITSCRIPTS:
+                raise ValidationError.from_connection(
+                    idx,
+                    "ip.ipv4_ignore_auto_dns or ip.ipv6_ignore_auto_dns is not "
+                    "supported by initscripts.",
+                )
         # initscripts does not support ip.dns_options, so raise errors when network
         # provider is initscripts
         if connection["ip"]["dns_options"]:
@@ -2590,6 +2635,17 @@ class ArgValidator_ListConnections(ArgValidatorList):
                             "NetworkManger until NM 1.34",
                         )
 
+        if mode == self.VALIDATE_ONE_MODE_INITSCRIPTS and connection["cloned_mac"] in [
+            "preserve",
+            "permanent",
+            "random",
+            "stable",
+        ]:
+            raise ValidationError.from_connection(
+                idx,
+                "Non-MAC argument is not supported by initscripts.",
+            )
+
         self.validate_route_tables(connection, idx)
 
 
@@ -2603,7 +2659,8 @@ class IPRouteUtils(object):
     # certain set of ASCII characters. These aliases are what we accept
     # as input (in the playbook), and there is no need to accept
     # user input with unusual characters or non-ASCII names.
-    ROUTE_TABLE_ALIAS_RE = re.compile("^[a-zA-Z0-9_.-]+$")
+    _ROUTE_TABLE_NAME_PATTERN = "[a-zA-Z0-9_.-]+"
+    ROUTE_TABLE_NAME_REGEX = re.compile("^" + _ROUTE_TABLE_NAME_PATTERN + "$")
 
     @classmethod
     def _parse_route_tables_mapping(cls, file_content, mapping):
@@ -2614,7 +2671,13 @@ class IPRouteUtils(object):
         # It is thus similar to rtnl_rttable_a2n(), from here:
         # https://git.kernel.org/pub/scm/network/iproute2/iproute2.git/tree/lib/rt_names.c?id=11e41a635cfab54e8e02fbff2a03715467e77ae9#n447
         regex = re.compile(
-            b"^\\s*(0x[0-9a-fA-F]+|[0-9]+)\\s+([a-zA-Z0-9_.-]+)(\\s*|\\s+#.*)$"
+            b"^\\s*"  # optional leading whitespace
+            b"(0x[0-9a-fA-F]+|[0-9]+)"  # table ID in hex or decimal (non negative)
+            b"\\s+"  # whitespace
+            b"("  # make a pattern group for the table name
+            + cls._ROUTE_TABLE_NAME_PATTERN.encode("ascii")
+            + b")"  # close pattern group
+            b"(\\s*|\\s+#.*)$"  # trailing whitespace or comment
         )
         for line in file_content.split(b"\n"):
 
@@ -2623,25 +2686,13 @@ class IPRouteUtils(object):
                 continue
 
             table = rmatch.group(1)
-            name = rmatch.group(2)
+            name = rmatch.group(2).decode("ascii")
 
-            name = name.decode("utf-8")
-
-            if not cls.ROUTE_TABLE_ALIAS_RE.match(name):
-                raise AssertionError(
-                    "bug: table alias contains unexpected characters: %s" % (name,)
-                )
-
-            tableid = None
-            try:
+            if table.startswith(b"0x"):
+                tableid = int(table, 16)
+            else:
                 tableid = int(table)
-            except Exception:
-                if table.startswith(b"0x"):
-                    try:
-                        tableid = int(table[2:], 16)
-                    except Exception:
-                        pass
-            if tableid is None or tableid < 0 or tableid > 0xFFFFFFFF:
+            if tableid > UINT32_MAX:
                 continue
 
             # In case of duplicates, the latter wins. That is unlike iproute2's

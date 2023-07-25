@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 ---
-- hosts: network-test
+- name: Manage teaming
+  hosts: network-test
   vars:
     network_connections:
       # Specify the team profile
@@ -11,8 +12,8 @@
         # ip configuration (optional)
         ip:
           address:
-            - "192.0.2.24/24"
-            - "2001:db8::23/64"
+            - 192.0.2.24/24
+            - 2001:db8::23/64
 
       # add an team profile to the team
       - name: member1
@@ -30,4 +31,3 @@
 
   roles:
     - linux-system-roles.network
-...

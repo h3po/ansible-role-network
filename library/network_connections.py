@@ -140,9 +140,11 @@ class SysUtil:
         links = {}
         for ifname in os.listdir("/sys/class/net/"):
             if not os.path.islink("/sys/class/net/" + ifname):
-                # /sys/class/net may contain certain entries that are not
-                # interface names, like 'bonding_master'. Skip over files
-                # that are not links.
+                # /sys/class/net may contain certain entries
+                # that are not interface names, like
+                # wokeignore:rule=master
+                # 'bonding_master'.
+                # Skip over files that are not links.
                 continue
             links[ifname] = {
                 "ifindex": SysUtil._link_read_ifindex(ifname),
@@ -334,6 +336,8 @@ class IfcfgUtil:
             ifcfg["ONBOOT"] = "no"
 
         ifcfg["DEVICE"] = connection["interface_name"]
+        if connection["cloned_mac"] != "default":
+            ifcfg["MACADDR"] = connection["cloned_mac"]
 
         if connection["type"] == "ethernet":
             ifcfg["TYPE"] = "Ethernet"
@@ -357,6 +361,7 @@ class IfcfgUtil:
             ifcfg["TYPE"] = "Bridge"
         elif connection["type"] == "bond":
             ifcfg["TYPE"] = "Bond"
+            # wokeignore:rule=master
             ifcfg["BONDING_MASTER"] = "yes"
             opts = ["mode=%s" % (connection["bond"]["mode"])]
             if connection["bond"]["miimon"] is not None:
@@ -450,9 +455,12 @@ class IfcfgUtil:
             if connection["port_type"] == "bridge":
                 ifcfg["BRIDGE"] = m
             elif connection["port_type"] == "bond":
+                # wokeignore:rule=master
                 ifcfg["MASTER"] = m
+                # wokeignore:rule=slave
                 ifcfg["SLAVE"] = "yes"
             elif connection["port_type"] == "team":
+                # wokeignore:rule=master
                 ifcfg["TEAM_MASTER"] = m
                 if "TYPE" in ifcfg:
                     del ifcfg["TYPE"]
@@ -523,6 +531,19 @@ class IfcfgUtil:
                 line = r["network"] + "/" + str(r["prefix"])
                 if r["gateway"]:
                     line += " via " + r["gateway"]
+                if connection["interface_name"]:
+                    line += " dev " + connection["interface_name"]
+                else:
+                    warn_fcn(
+                        "The connection {0} does not specify an interface name. "
+                        "Therefore, the route to {1}/{2} will be configured without "
+                        "the output device and the kernel will choose it "
+                        "automatically which might result in an unwanted device being "
+                        "used. To avoid this, specify `interface_name` in the "
+                        "connection appropriately.".format(
+                            connection["name"], r["network"], r["prefix"]
+                        ),
+                    )
                 if r["metric"] != -1:
                     line += " metric " + str(r["metric"])
 
@@ -895,13 +916,17 @@ class NMUtil:
                 if option in ["all_ports_active", "use_carrier", "tlb_dynamic_lb"]:
                     value = int(value)
                 if option in ["all_ports_active", "packets_per_port"]:
+                    # wokeignore:rule=slave
                     option = option.replace("port", "slave")
                 s_bond.add_option(option, str(value))
         elif connection["type"] == "team":
             s_con.set_property(NM.SETTING_CONNECTION_TYPE, NM.SETTING_TEAM_SETTING_NAME)
+        # wokeignore:rule=dummy
         elif connection["type"] == "dummy":
             s_con.set_property(
-                NM.SETTING_CONNECTION_TYPE, NM.SETTING_DUMMY_SETTING_NAME
+                # wokeignore:rule=dummy
+                NM.SETTING_CONNECTION_TYPE,
+                NM.SETTING_DUMMY_SETTING_NAME,
             )
         elif connection["type"] == "vlan":
             s_con.set_property(NM.SETTING_CONNECTION_TYPE, NM.SETTING_VLAN_SETTING_NAME)
@@ -962,6 +987,18 @@ class NMUtil:
                 )
         else:
             raise MyError("unsupported type %s" % (connection["type"]))
+
+        if connection["cloned_mac"] != "default":
+            if connection["type"] == "wireless":
+                s_wireless = self.connection_ensure_setting(con, NM.SettingWireless)
+                s_wireless.set_property(
+                    NM.SETTING_WIRELESS_CLONED_MAC_ADDRESS, connection["cloned_mac"]
+                )
+            else:
+                s_wired = self.connection_ensure_setting(con, NM.SettingWired)
+                s_wired.set_property(
+                    NM.SETTING_WIRED_CLONED_MAC_ADDRESS, connection["cloned_mac"]
+                )
 
         if "ethernet" in connection:
             if connection["ethernet"]["autoneg"] is not None:
@@ -1034,9 +1071,12 @@ class NMUtil:
 
         if connection["controller"] is not None:
             s_con.set_property(
-                NM.SETTING_CONNECTION_SLAVE_TYPE, connection["port_type"]
+                # wokeignore:rule=slave
+                NM.SETTING_CONNECTION_SLAVE_TYPE,
+                connection["port_type"],
             )
             s_con.set_property(
+                # wokeignore:rule=master
                 NM.SETTING_CONNECTION_MASTER,
                 ArgUtil.connection_find_controller_uuid(
                     connection["controller"], connections, idx
@@ -1135,6 +1175,13 @@ class NMUtil:
                 else:
                     s_ip6.set_property(NM.SETTING_IP_CONFIG_NEVER_DEFAULT, True)
                     s_ip4.set_property(NM.SETTING_IP_CONFIG_NEVER_DEFAULT, True)
+
+            s_ip4.set_property(
+                NM.SETTING_IP_CONFIG_IGNORE_AUTO_DNS, bool(ip["ipv4_ignore_auto_dns"])
+            )
+            s_ip6.set_property(
+                NM.SETTING_IP_CONFIG_IGNORE_AUTO_DNS, bool(ip["ipv6_ignore_auto_dns"])
+            )
 
             for nameserver in ip["dns"]:
                 if nameserver["family"] == socket.AF_INET6:

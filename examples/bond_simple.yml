@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 ---
-- hosts: network-test
+- name: Manage bond connection
+  hosts: network-test
   vars:
     network_connections:
       # Specify the bond profile
@@ -11,8 +12,8 @@
         # ip configuration (optional)
         ip:
           address:
-            - "192.0.2.24/24"
-            - "2001:db8::23/64"
+            - 192.0.2.24/24
+            - 2001:db8::23/64
         # bond configuration settings: (optional)
         bond:
           mode: active-backup
@@ -33,4 +34,3 @@
         controller: bond0
   roles:
     - linux-system-roles.network
-...

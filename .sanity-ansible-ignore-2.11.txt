@@ -6,6 +6,7 @@ plugins/module_utils/network_lsr/nm/__init__.py import-3.6!skip
 plugins/module_utils/network_lsr/nm/__init__.py import-3.7!skip
 plugins/module_utils/network_lsr/nm/__init__.py import-3.8!skip
 plugins/module_utils/network_lsr/nm/__init__.py import-3.9!skip
+plugins/module_utils/network_lsr/nm/__init__.py import-3.10!skip
 plugins/module_utils/network_lsr/nm/active_connection.py import-2.6!skip
 plugins/module_utils/network_lsr/nm/active_connection.py import-2.7!skip
 plugins/module_utils/network_lsr/nm/active_connection.py import-3.5!skip
@@ -13,6 +14,7 @@ plugins/module_utils/network_lsr/nm/active_connection.py import-3.6!skip
 plugins/module_utils/network_lsr/nm/active_connection.py import-3.7!skip
 plugins/module_utils/network_lsr/nm/active_connection.py import-3.8!skip
 plugins/module_utils/network_lsr/nm/active_connection.py import-3.9!skip
+plugins/module_utils/network_lsr/nm/active_connection.py import-3.10!skip
 plugins/module_utils/network_lsr/nm/client.py import-2.6!skip
 plugins/module_utils/network_lsr/nm/client.py import-2.7!skip
 plugins/module_utils/network_lsr/nm/client.py import-3.5!skip
@@ -20,6 +22,7 @@ plugins/module_utils/network_lsr/nm/client.py import-3.6!skip
 plugins/module_utils/network_lsr/nm/client.py import-3.7!skip
 plugins/module_utils/network_lsr/nm/client.py import-3.8!skip
 plugins/module_utils/network_lsr/nm/client.py import-3.9!skip
+plugins/module_utils/network_lsr/nm/client.py import-3.10!skip
 plugins/module_utils/network_lsr/nm/connection.py import-2.6!skip
 plugins/module_utils/network_lsr/nm/connection.py import-2.7!skip
 plugins/module_utils/network_lsr/nm/connection.py import-3.5!skip
@@ -27,6 +30,7 @@ plugins/module_utils/network_lsr/nm/connection.py import-3.6!skip
 plugins/module_utils/network_lsr/nm/connection.py import-3.7!skip
 plugins/module_utils/network_lsr/nm/connection.py import-3.8!skip
 plugins/module_utils/network_lsr/nm/connection.py import-3.9!skip
+plugins/module_utils/network_lsr/nm/connection.py import-3.10!skip
 plugins/module_utils/network_lsr/nm/error.py import-2.6!skip
 plugins/module_utils/network_lsr/nm/error.py import-2.7!skip
 plugins/module_utils/network_lsr/nm/error.py import-3.5!skip
@@ -34,6 +38,7 @@ plugins/module_utils/network_lsr/nm/error.py import-3.6!skip
 plugins/module_utils/network_lsr/nm/error.py import-3.7!skip
 plugins/module_utils/network_lsr/nm/error.py import-3.8!skip
 plugins/module_utils/network_lsr/nm/error.py import-3.9!skip
+plugins/module_utils/network_lsr/nm/error.py import-3.10!skip
 plugins/module_utils/network_lsr/nm/provider.py import-2.6!skip
 plugins/module_utils/network_lsr/nm/provider.py import-2.7!skip
 plugins/module_utils/network_lsr/nm/provider.py import-3.5!skip
@@ -41,6 +46,7 @@ plugins/module_utils/network_lsr/nm/provider.py import-3.6!skip
 plugins/module_utils/network_lsr/nm/provider.py import-3.7!skip
 plugins/module_utils/network_lsr/nm/provider.py import-3.8!skip
 plugins/module_utils/network_lsr/nm/provider.py import-3.9!skip
+plugins/module_utils/network_lsr/nm/provider.py import-3.10!skip
 plugins/modules/network_connections.py validate-modules:doc-default-does-not-match-spec
 plugins/modules/network_connections.py validate-modules:doc-required-mismatch
 plugins/modules/network_connections.py validate-modules:missing-examples

@@ -1,8 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 ---
-- hosts: all
-
-- name: Test configuring ethernet devices
+- name: Play for testing route table
   hosts: all
   vars:
     type: veth
@@ -10,15 +8,18 @@
 
 
   tasks:
-    - name: "set type={{ type }} and interface={{ interface }}"
+    - name: "Set type={{ type }} and interface={{ interface }}"  # noqa name
       set_fact:
         type: "{{ type }}"
         interface: "{{ interface }}"
-    - include_tasks: tasks/show_interfaces.yml
-    - include_tasks: tasks/manage_test_interface.yml
+    - name: Include the task 'show_interfaces.yml'
+      include_tasks: tasks/show_interfaces.yml
+    - name: Include the task 'manage_test_interface.yml'
+      include_tasks: tasks/manage_test_interface.yml
       vars:
         state: present
-    - include_tasks: tasks/assert_device_present.yml
+    - name: Include the task 'assert_device_present.yml'
+      include_tasks: tasks/assert_device_present.yml
 
     - name: Configure connection profile and specify the numeric table in
         static routes
@@ -30,9 +31,9 @@
             interface_name: "{{ interface }}"
             state: up
             type: ethernet
-            autoconnect: yes
+            autoconnect: true
             ip:
-              dhcp4: no
+              dhcp4: false
               address:
                 - 198.51.100.3/26
               route:
@@ -50,13 +51,13 @@
     - name: Get the routes from the route table 30200
       command: ip route show table 30200
       register: route_table_30200
-      ignore_errors: yes
+      ignore_errors: true
       changed_when: false
 
     - name: Get the routes from the route table 30400
       command: ip route show table 30400
       register: route_table_30400
-      ignore_errors: yes
+      ignore_errors: true
       changed_when: false
 
     - name: Assert that the route table 30200 contains the specified route
@@ -82,7 +83,7 @@
         path: /etc/iproute2/rt_tables.d/table.conf
         line: "200 custom"
         mode: "0644"
-        create: yes
+        create: true
 
     - name: Reconfigure connection profile and specify the named table in
         static routes
@@ -94,9 +95,9 @@
             interface_name: "{{ interface }}"
             state: up
             type: ethernet
-            autoconnect: yes
+            autoconnect: true
             ip:
-              dhcp4: no
+              dhcp4: false
               address:
                 - 198.51.100.3/26
               route:
@@ -114,7 +115,7 @@
     - name: Get the routes from the named route table 'custom'
       command: ip route show table custom
       register: route_table_custom
-      ignore_errors: yes
+      ignore_errors: true
       changed_when: false
 
     - name: Assert that the named route table 'custom' contains the
@@ -133,18 +134,22 @@
         state: absent
         path: /etc/iproute2/rt_tables.d/table.conf
 
-- import_playbook: down_profile+delete_interface.yml
+- name: Import the playbook 'down_profile+delete_interface.yml'
+  import_playbook: down_profile+delete_interface.yml
   vars:
     profile: "{{ interface }}"
 # FIXME: assert profile/device down
-- import_playbook: remove_profile.yml
+- name: Import the playbook 'remove_profile.yml'
+  import_playbook: remove_profile.yml
   vars:
     profile: "{{ interface }}"
 - name: Assert device and profile are absent
   hosts: all
   tasks:
-    - include_tasks: tasks/assert_profile_absent.yml
+    - name: Include the task 'assert_profile_absent.yml'
+      include_tasks: tasks/assert_profile_absent.yml
       vars:
         profile: "{{ interface }}"
-    - include_tasks: tasks/assert_device_absent.yml
+    - name: Include the task 'assert_device_absent.yml'
+      include_tasks: tasks/assert_device_absent.yml
 ...

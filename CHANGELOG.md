@@ -1,6 +1,129 @@
 Changelog
 =========
 
+[1.13.1] - 2023-07-19
+--------------------
+
+### Bug Fixes
+
+- fix: facts being gathered unnecessarily (#628)
+
+### Other Changes
+
+- ci: ansible-lint - ignore var-naming[no-role-prefix] (#626)
+- ci: ansible-test ignores file for ansible-core 2.15 (#627)
+
+[1.13.0] - 2023-07-10
+--------------------
+
+### New Features
+
+- feat: add AlmaLinux to RHEL compat distro list (#618)
+- feat: Support "no-aaaa" DNS option (#619)
+
+### Other Changes
+
+- ci: Use tox-lsr 2.13 for py26 (#620)
+- ci: Add pull request template and run commitlint on PR title only (#621)
+- ci: Rename commitlint to PR title Lint, echo PR titles from env var (#623)
+- ci: fix python 2.7 CI tests by manually installing python2.7 package (#624)
+
+[1.12.0] - 2023-05-30
+--------------------
+
+### New Features
+
+- feat: Support ipv4_ignore_auto_dns and ipv6_ignore_auto_dns settings
+
+### Other Changes
+
+- docs: Consistent contributing.md for all roles - allow role specific contributing.md section
+
+[1.11.4] - 2023-04-28
+--------------------
+
+### Other Changes
+
+- test: Fix the failure of running ANSIBLE_GATHERING=explicit on tests_switch_provider.yml
+- ci: Add commitlint GitHub action to ensure conventional commits with feedback
+- style: Use standard Ansible braces and brackets spacing
+- style: ansible-lint - fix missing YAML document start
+- style: ansible-lint - remove line-length files from .yamllint.yml
+
+[1.11.3] - 2023-04-13
+--------------------
+
+### Other Changes
+
+- ansible-lint: Fix ansible-lint issues in tests
+- Add README-ansible.md to refer Ansible intro page on linux-system-roles.github.io
+- Fingerprint RHEL System Role managed config files
+
+[1.11.2] - 2023-02-20
+--------------------
+
+### New Features
+
+- none
+
+### Bug Fixes
+
+- initscripts: Configure output device in routes
+
+### Other Changes
+
+- none
+
+[1.11.1] - 2023-01-24
+--------------------
+
+### New Features
+
+- none
+
+### Bug Fixes
+
+- none
+
+### Other Changes
+
+- ansible-lint 6.x updates
+- Support running the tests with ANSIBLE_GATHERING=explicit
+- Clean up / Workaround non-inclusive words
+- Add check for non-inclusive language
+- fix the ansible-pull link, the old do not work
+- tag all bond tests with expfail
+
+[1.11.0] - 2022-12-12
+--------------------
+
+### New Features
+
+- Support cloned MAC address
+
+### Bug Fixes
+
+- none
+
+### Other Changes
+
+- none
+
+[1.10.1] - 2022-11-14
+--------------------
+
+### New Features
+
+- none
+
+### Bug Fixes
+
+- none
+
+### Other Changes
+
+- support ansible-core-2.14, ansible-lint 6.x
+
 [1.10.0] - 2022-11-01
 --------------------
 
@@ -140,15 +263,15 @@ Changelog
 ### Changes
 
 - Use inclusive language
-- `slave` is deprecated in favor of `port`
-- `master` is deprecated in favor of `controller`
+- `slave` is deprecated in favor of `port` <!--- wokeignore:rule=slave -->
+- `master` is deprecated in favor of `controller` <!--- wokeignore:rule=master -->
 
 ### New features
 
 - Support disabling IPv6
 - Support `dns_options` when using one or more IPv4 nameservers
 - Support Ethtool coalesce settings
-- Support dummy interfaces
+- Support dummy interfaces <!--- wokeignore:rule=dummy -->
 
 ### Bug fixes
 

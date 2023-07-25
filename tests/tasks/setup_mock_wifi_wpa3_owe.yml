@@ -7,10 +7,11 @@
       - wpa_supplicant
     state: present
 
+# yamllint disable rule:line-length
 # Even though hostapd can be installed via EPEL 8, Opportunistic Wireless Encryption
 # (OWE) has not been enabled by default. To warrant the test support on RHEL(dist-tag),
 # we setup hostapd copr repo to enable OWE option.
-- name: install hostapd and mac80211_hwsim kernel module in CentOS 8
+- name: Install hostapd and mac80211_hwsim kernel module in CentOS 8
   shell: |
     dnf -y copr enable liangwen12year/hostapd-owe
     dnf -y install hostapd
@@ -23,21 +24,25 @@
   when:
     - ansible_distribution_major_version == '8'
     - ansible_distribution == 'CentOS'
+  changed_when: false
+# yamllint enable rule:line-length
 
-- name: install hostapd in Fedora
+- name: Install hostapd in Fedora
   shell: |
     dnf -y copr enable liangwen12year/hostapd-owe
     dnf -y install hostapd
   when:
     - ansible_distribution == 'Fedora'
+  changed_when: false
 
-- name: install mac80211_hwsim kernel modules in Fedora
+- name: Install mac80211_hwsim kernel modules in Fedora
   shell: |
     dnf -y install koji
     koji download-build --arch=$(uname -p) kernel-modules-internal-$(uname -r)
     dnf -y install kernel-modules*.rpm
   when:
     - ansible_distribution == 'Fedora'
+  changed_when: false
 
 - name: Create hostapd config
   copy:
@@ -54,4 +59,5 @@
     dest: /etc/hostapd/wireless.conf
     mode: "0644"
 
-- include_tasks: tasks/start_mock_wifi.yml
+- name: Include the task 'start_mock_wifi.yml'
+  include_tasks: tasks/start_mock_wifi.yml

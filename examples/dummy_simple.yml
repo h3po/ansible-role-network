@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 ---
-- hosts: all
+- name: Example of profile management
+  hosts: all
   vars:
     network_connections:
       # Specify the dummy profile
@@ -10,8 +11,7 @@
         interface_name: dummy0
         ip:
           address:
-            - "192.0.2.42/30"
+            - 192.0.2.42/30
 
   roles:
     - linux-system-roles.network
-...

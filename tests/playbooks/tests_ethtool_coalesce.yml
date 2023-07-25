@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 ---
-- hosts: all
+- name: Play for testing ethtool coalesce settings
+  hosts: all
   vars:
     interface: testnic1
     type: veth
@@ -14,17 +15,21 @@
     - name: "INIT: Ethtool coalesce tests"
       debug:
         msg: "##################################################"
-    - include_tasks: tasks/show_interfaces.yml
-    - include_tasks: tasks/manage_test_interface.yml
+    - name: Include the task 'show_interfaces.yml'
+      include_tasks: tasks/show_interfaces.yml
+    - name: Include the task 'manage_test_interface.yml'
+      include_tasks: tasks/manage_test_interface.yml
       vars:
         state: present
-    - include_tasks: tasks/assert_device_present.yml
+    - name: Include the task 'assert_device_present.yml'
+      include_tasks: tasks/assert_device_present.yml
     - name: Install ethtool (test dependency)
       package:
         name: ethtool
         state: present
 
-    - block:
+    - name: Test ethtool coalesce settings
+      block:
         - name: >-
             TEST: I can create a profile without any coalescing option.
           debug:
@@ -38,14 +43,15 @@
                 type: ethernet
                 state: up
                 ip:
-                  dhcp4: no
-                  auto6: no
+                  dhcp4: false
+                  auto6: false
 
         - name: Get profile's coalescing options
           command: nmcli -g ethtool.coalesce-rx-frames c show {{ interface }}
           register: no_coalesce_nm
           when:
             - network_provider == "nm"
+          changed_when: false
         - name: "ASSERT: The profile does not contain coalescing options"
           assert:
             that: no_coalesce_nm.stdout | length == 0
@@ -58,6 +64,7 @@
           ignore_errors: true
           when:
             - network_provider == "initscripts"
+          changed_when: false
         - name: "ASSERT: The profile does not contain coalescing options"
           assert:
             that: no_coalesce_initscripts.stdout | length == 0
@@ -77,8 +84,8 @@
                 type: ethernet
                 state: up
                 ip:
-                  dhcp4: no
-                  auto6: no
+                  dhcp4: false
+                  auto6: false
                 ethtool:
                   coalesce:
                     rx_frames: 128
@@ -87,6 +94,7 @@
           register: with_coalesce_nm
           when:
             - network_provider == "nm"
+          changed_when: false
         - name: Assert coalesce options set in profile
           assert:
             that: with_coalesce_nm.stdout == '128'
@@ -100,6 +108,7 @@
           ignore_errors: true
           when:
             - network_provider == "initscripts"
+          changed_when: false
         - name: Assert coalesce options set in profile
           assert:
             that: '"rx-frames 128" in with_coalesce_initscripts.stdout'
@@ -118,14 +127,15 @@
                 type: ethernet
                 state: up
                 ip:
-                  dhcp4: no
-                  auto6: no
+                  dhcp4: false
+                  auto6: false
 
         - name: Get profile's coalescing options
           command: nmcli -g ethtool.coalesce-rx-frames c show {{ interface }}
           when:
             - network_provider == "nm"
           register: clear_coalesce_nm
+          changed_when: false
         - name: "ASSERT: The profile does reset coalescing options"
           assert:
             that: clear_coalesce_nm.stdout | length == 0
@@ -138,6 +148,7 @@
           ignore_errors: true
           when:
             - network_provider == "initscripts"
+          changed_when: false
         - name: "ASSERT: The profile does reset coalescing options"
           assert:
             that: clear_coalesce_initscripts.stdout | length == 0
@@ -145,7 +156,10 @@
             - network_provider == "initscripts"
 
       always:
-        - block:
+        - name: Clean up the test device and the connection profile
+          tags:
+            - "tests::cleanup"
+          block:
             - name: Import network role
               import_role:
                 name: linux-system-roles.network
@@ -153,9 +167,8 @@
                 network_connections:
                   - name: "{{ interface }}"
                     persistent_state: absent
-              ignore_errors: true
-            - include_tasks: tasks/manage_test_interface.yml
+              failed_when: false
+            - name: Include the task 'manage_test_interface.yml'
+              include_tasks: tasks/manage_test_interface.yml
               vars:
                 state: absent
-          tags:
-            - "tests::cleanup"

@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 ---
-- hosts: all
+- name: Play for testing ethtool coalesce settings
+  hosts: all
   vars:
     interface: "{{ network_interface_name1 }}"
     type: "{{ network_interface_type1 }}"
@@ -8,16 +9,20 @@
     - name: "INIT: Ethtool coalesce tests"
       debug:
         msg: "##################################################"
-    - include_tasks: tasks/show_interfaces.yml
-    - include_tasks: tasks/manage_test_interface.yml
+    - name: Include the task 'show_interfaces.yml'
+      include_tasks: tasks/show_interfaces.yml
+    - name: Include the task 'manage_test_interface.yml'
+      include_tasks: tasks/manage_test_interface.yml
       vars:
         state: present
-    - include_tasks: tasks/assert_device_present.yml
+    - name: Include the task 'assert_device_present.yml'
+      include_tasks: tasks/assert_device_present.yml
     - name: Install ethtool (test dependency)
       package:
         name: ethtool
         state: present
-    - block:
+    - name: Test ethtool coalesce settings
+      block:
         - name: >-
             TEST: I can create a profile without changing the ethtool coalesce.
           debug:
@@ -25,6 +30,7 @@
         - name: Get current device coalesce
           command: "ethtool --show-coalesce {{ interface }}"
           register: original_ethtool_coalesce
+          changed_when: false
         - name: Import network role
           import_role:
             name: linux-system-roles.network
@@ -39,6 +45,7 @@
         - name: Get current device coalesce
           command: "ethtool --show-coalesce {{ interface }}"
           register: ethtool_coalesce
+          changed_when: false
         - name: "ASSERT: The profile does not change the ethtool coalesce"
           assert:
             that:
@@ -65,6 +72,7 @@
         - name: Get current device coalesce
           command: "ethtool --show-coalesce {{ interface }}"
           register: ethtool_coalesce
+          changed_when: false
         - name: Show ethtool_coalesce output
           debug:
             var: ethtool_coalesce.stdout_lines
@@ -94,6 +102,7 @@
         - name: Get current device coalesce
           command: "ethtool --show-coalesce {{ interface }}"
           register: ethtool_coalesce
+          changed_when: false
         # Resetting the ethtools only works with NetworkManager
         - name: "ASSERT: The profile does not change the ethtool coalesce"
           assert:
@@ -102,17 +111,20 @@
           when:
             network_provider == 'nm'
       always:
-        - block:
-            - import_role:
+        - name: Clean up the test device and the connection profile
+          tags:
+            - "tests::cleanup"
+          block:
+            - name: Deactivate the connection and remove the connection profile
+              import_role:
                 name: linux-system-roles.network
               vars:
                 network_connections:
                   - name: "{{ interface }}"
                     persistent_state: absent
                     state: down
-              ignore_errors: true
-            - include_tasks: tasks/manage_test_interface.yml
+              failed_when: false
+            - name: Include the task 'manage_test_interface.yml'
+              include_tasks: tasks/manage_test_interface.yml
               vars:
                 state: absent
-          tags:
-            - "tests::cleanup"
